@@ -370,18 +370,24 @@ function goStep(n) {
 }
 
 async function callClaude(prompt) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer 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',
+      'HTTP-Referer': 'https://ahmt007.github.io',
+      'X-Title': 'YouTube Nis Bulucu'
+    },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'meta-llama/llama-3.3-8b-instruct:free',
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     })
   });
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
-  return data.content.map(i => i.text || '').join('');
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.choices[0].message.content;
 }
 
 function showResult(id, text, isError) {
