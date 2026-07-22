@@ -1,640 +1,289 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Niş Bulucu</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --border: #2a2a2a;
-    --accent: #ff4444;
-    --accent2: #ff8800;
-    --text: #f0f0f0;
-    --muted: #888;
-    --step-done: #1a2a1a;
-    --step-active: #1a1010;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-    padding: 24px 16px 60px;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 32px;
-  }
-
-  header h1 {
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #ff4444, #ff8800);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  header p {
-    color: var(--muted);
-    font-size: 14px;
-    margin-top: 6px;
-  }
-
-  .steps-bar {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 28px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .step-pill {
-    flex: 1;
-    min-width: 52px;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--border);
-    transition: background 0.4s;
-  }
-
-  .step-pill.done { background: var(--accent2); }
-  .step-pill.active { background: var(--accent); }
-
-  .step-label {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 20px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  .step-tag {
-    flex: 1;
-    min-width: 52px;
-    text-align: center;
-    font-size: 10px;
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .step-tag.active { color: var(--accent); font-weight: 700; }
-  .step-tag.done { color: var(--accent2); }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-
-  .card-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .step-num {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .card-title { font-size: 18px; font-weight: 700; }
-  .card-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
-
-  .result-box {
-    background: #111;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 14px;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    min-height: 80px;
-    color: #ddd;
-    max-height: 500px;
-    overflow-y: auto;
-  }
-
-  .result-box.loading {
-    color: var(--muted);
-    font-style: italic;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .result-box.error { color: #ff6666; border-color: #ff4444; }
-
-  .btn {
-    width: 100%;
-    padding: 16px;
-    border-radius: 12px;
-    border: none;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 14px;
-    letter-spacing: 0.3px;
-  }
-
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .btn-next {
-    background: #1e3a1e;
-    color: #4caf50;
-    border: 1px solid #2d5a2d;
-  }
-
-  .btn-next:hover:not(:disabled) {
-    background: #254a25;
-    transform: translateY(-1px);
-  }
-
-  .locked {
-    opacity: 0.35;
-    pointer-events: none;
-  }
-
-  .badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-left: auto;
-  }
-
-  .badge-wait { background: #222; color: var(--muted); }
-  .badge-run { background: #2a1010; color: var(--accent); }
-  .badge-done { background: #1a2a1a; color: #4caf50; }
-
-  .niche-select-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-  }
-
-  .niche-btn {
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: #1a1a1a;
-    color: var(--text);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .niche-btn:hover, .niche-btn.selected {
-    border-color: var(--accent);
-    background: #2a1010;
-    color: var(--accent);
-  }
-
-  .picked-niche {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--accent2);
-    margin-bottom: 14px;
-  }
-
-  h3 { font-size: 14px; color: var(--muted); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berber & Kuaför Online Randevu Sistemi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#121214',
+                        cardBg: '#1a1a1e',
+                        cardHover: '#222227',
+                        goldPrimary: '#d4af37',
+                        goldLight: '#f3e5ab',
+                        goldDark: '#aa8c2c',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-darkBg text-gray-100 font-sans antialiased min-h-screen flex">
 
-<header>
-  <h1>▶ YouTube Niş Bulucu</h1>
-  <p>5 adımlı AI analizi · Sıfırdan kanal stratejisi</p>
-</header>
+    <!-- SOL MENÜ (Sidebar) -->
+    <aside class="w-64 bg-cardBg border-r border-gray-800 flex flex-col justify-between hidden md:flex shrink-0">
+        <div>
+            <!-- Logo Alanı -->
+            <div class="p-6 border-b border-gray-800 text-center">
+                <div class="flex items-center justify-center space-x-2 text-goldPrimary text-2xl font-bold">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span class="tracking-widest uppercase text-lg">Berber & Kuaför</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1 uppercase tracking-wider">Online Randevu</p>
+            </div>
 
-<div class="steps-bar">
-  <div class="step-pill active" id="pill-0"></div>
-  <div class="step-pill" id="pill-1"></div>
-  <div class="step-pill" id="pill-2"></div>
-  <div class="step-pill" id="pill-3"></div>
-  <div class="step-pill" id="pill-4"></div>
-</div>
-<div class="step-label">
-  <div class="step-tag active" id="tag-0">Niş Bul</div>
-  <div class="step-tag" id="tag-1">Analiz</div>
-  <div class="step-tag" id="tag-2">Alt Niş</div>
-  <div class="step-tag" id="tag-3">Rakip</div>
-  <div class="step-tag" id="tag-4">30 Gün Plan</div>
-</div>
+            <!-- Menü Linkleri -->
+            <nav class="p-4 space-y-1">
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl bg-goldPrimary text-darkBg font-medium transition">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Ana Sayfa</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Randevular</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Takvim</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Müşteriler</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-scissors"></i>
+                    <span>Hizmetler</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span>Çalışanlar</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-images"></i>
+                    <span>Galeri</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>Yorumlar</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>İstatistikler</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-cardHover hover:text-white transition">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Ayarlar</span>
+                </a>
+            </nav>
+        </div>
 
-<div id="step0" class="card">
-  <div class="card-header">
-    <div class="step-num">1</div>
-    <div>
-      <div class="card-title">Karlı Niş Bul</div>
-      <div class="card-sub">AI en iyi 10 nişi puanlayacak</div>
-    </div>
-    <span class="badge badge-run" id="badge-0">Aktif</span>
-  </div>
-  <button class="btn btn-primary" id="btn0" onclick="runStep0()">🔍 Niş Analizi Başlat</button>
-  <div id="result0" style="display:none; margin-top:14px;"></div>
-  <button class="btn btn-next" id="next0" style="display:none;" onclick="goStep(1)">Devam → Niş Analizi</button>
-</div>
+        <!-- Çıkış Yap -->
+        <div class="p-4 border-t border-gray-800">
+            <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Çıkış Yap</span>
+            </a>
+        </div>
+    </aside>
 
-<div id="step1" class="card locked">
-  <div class="card-header">
-    <div class="step-num">2</div>
-    <div>
-      <div class="card-title">Niş Derinlemesine Analiz</div>
-      <div class="card-sub">Her niş için "girilir / girilmez" kararı</div>
-    </div>
-    <span class="badge badge-wait" id="badge-1">Bekliyor</span>
-  </div>
-  <div id="niche-picker" style="display:none;">
-    <h3>Hangi nişi analiz edelim?</h3>
-    <div class="niche-select-row" id="niche-buttons"></div>
-    <button class="btn btn-primary" id="btn1" onclick="runStep1()" style="margin-top:14px;" disabled>Analiz Et</button>
-  </div>
-  <div id="result1" style="display:none; margin-top:14px;"></div>
-  <button class="btn btn-next" id="next1" style="display:none;" onclick="goStep(2)">Devam → Alt Niş Bul</button>
-</div>
+    <!-- ANA İÇERİK ALANI -->
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
+        
+        <!-- Üst Header -->
+        <header class="bg-cardBg border-b border-gray-800 px-8 py-4 flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold">Hoş Geldiniz, Ahmet Bey 👋</h1>
+                <p class="text-sm text-gray-400">İşletmenizin genel durumunu aşağıdan takip edebilirsiniz.</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="flex items-center space-x-2 bg-cardHover border border-gray-700 px-4 py-2 rounded-xl text-sm hover:border-goldPrimary transition">
+                    <i class="fa-solid fa-link text-goldPrimary"></i>
+                    <span>Randevu Linkim</span>
+                </button>
+                <div class="flex items-center space-x-3 border-l border-gray-700 pl-4">
+                    <div class="w-10 h-10 rounded-full bg-goldPrimary/20 flex items-center justify-center text-goldPrimary font-bold">
+                        AY
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">Salon King</p>
+                        <p class="text-xs text-gray-400">Ahmet Yılmaz</p>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-<div id="step2" class="card locked">
-  <div class="card-header">
-    <div class="step-num">3</div>
-    <div>
-      <div class="card-title">Alt Niş Keşfi</div>
-      <div class="card-sub">Rekabetsiz, talebi olan 10 alt niş</div>
-    </div>
-    <span class="badge badge-wait" id="badge-2">Bekliyor</span>
-  </div>
-  <div id="result2" style="display:none; margin-top:14px;"></div>
-  <button class="btn btn-next" id="next2" style="display:none;" onclick="goStep(3)">Devam → Rakip Analizi</button>
-</div>
+        <!-- İçerik Gövdesi -->
+        <div class="p-8 space-y-6">
+            
+            <!-- İstatistik Kartları -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="bg-cardBg p-5 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-goldPrimary/10 text-goldPrimary flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Bugünkü Randevu</p>
+                        <h3 class="text-2xl font-bold mt-1">12</h3>
+                    </div>
+                </div>
 
-<div id="step3" class="card locked">
-  <div class="card-header">
-    <div class="step-num">4</div>
-    <div>
-      <div class="card-title">Rakip Analizi</div>
-      <div class="card-sub">Büyük kanalların stratejisini çöz</div>
-    </div>
-    <span class="badge badge-wait" id="badge-3">Bekliyor</span>
-  </div>
-  <div id="result3" style="display:none; margin-top:14px;"></div>
-  <button class="btn btn-next" id="next3" style="display:none;" onclick="goStep(4)">Devam → 30 Günlük Plan</button>
-</div>
+                <div class="bg-cardBg p-5 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-goldPrimary/10 text-goldPrimary flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Bu Haftaki Randevu</p>
+                        <h3 class="text-2xl font-bold mt-1">48</h3>
+                    </div>
+                </div>
 
-<div id="step4" class="card locked">
-  <div class="card-header">
-    <div class="step-num">5</div>
-    <div>
-      <div class="card-title">30 Günlük Başlangıç Planı</div>
-      <div class="card-sub">Video fikirleri, başlıklar, günlük görevler</div>
-    </div>
-    <span class="badge badge-wait" id="badge-4">Bekliyor</span>
-  </div>
-  <div id="result4" style="display:none; margin-top:14px;"></div>
-  <div id="final-msg" style="display:none; text-align:center; margin-top:20px; color:#4caf50; font-weight:700; font-size:16px;">✅ Tüm analizler tamamlandı! Planın hazır.</div>
-</div>
+                <div class="bg-cardBg p-5 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-goldPrimary/10 text-goldPrimary flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Toplam Müşteri</p>
+                        <h3 class="text-2xl font-bold mt-1">236</h3>
+                    </div>
+                </div>
 
-<script>
-let pickedNiche = '';
-let niches = [];
-let step1Context = '';
+                <div class="bg-cardBg p-5 rounded-2xl border border-gray-800 flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-goldPrimary/10 text-goldPrimary flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Toplam Gelir</p>
+                        <h3 class="text-2xl font-bold mt-1">₺24.680</h3>
+                    </div>
+                </div>
+            </div>
 
-function setBadge(idx, state) {
-  const b = document.getElementById('badge-' + idx);
-  b.className = 'badge badge-' + state;
-  b.textContent = state === 'wait' ? 'Bekliyor' : state === 'run' ? 'Çalışıyor' : '✓ Tamam';
-}
+            <!-- Orta Bölüm: Günlük Randevular, Takvim ve Yaklaşanlar -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Günlük Randevular -->
+                <div class="bg-cardBg p-6 rounded-2xl border border-gray-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="font-semibold text-lg">Günlük Randevular</h2>
+                            <p class="text-xs text-gray-400">16 Mayıs 2024, Perşembe</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-sm text-gray-400"></i>
+                    </div>
 
-function setPills(current) {
-  for (let i = 0; i < 5; i++) {
-    const pill = document.getElementById('pill-' + i);
-    const tag = document.getElementById('tag-' + i);
-    pill.className = 'step-pill ' + (i < current ? 'done' : i === current ? 'active' : '');
-    tag.className = 'step-tag ' + (i < current ? 'done' : i === current ? 'active' : '');
-  }
-}
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-cardHover rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-semibold text-gray-400 w-12">09:30</span>
+                                <div>
+                                    <p class="text-sm font-medium">Mehmet Yılmaz</p>
+                                    <p class="text-xs text-gray-400">Saç Kesimi</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400">Tamamlandı</span>
+                        </div>
 
-function goStep(n) {
-  document.getElementById('step' + n).classList.remove('locked');
-  setBadge(n, 'run');
-  setPills(n);
-  if (n === 1) {
-    document.getElementById('niche-picker').style.display = 'block';
-  }
-  if (n === 2) runStep2();
-  if (n === 3) runStep3();
-  if (n === 4) runStep4();
-  document.getElementById('step' + n).scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
+                        <div class="flex items-center justify-between p-3 bg-cardHover rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-semibold text-gray-400 w-12">11:00</span>
+                                <div>
+                                    <p class="text-sm font-medium">Ali Can</p>
+                                    <p class="text-xs text-gray-400">Sakal Traşı</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400">Beklemede</span>
+                        </div>
 
-async function callClaude(prompt) {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer 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',
-      'HTTP-Referer': 'https://ahmt007.github.io',
-      'X-Title': 'YouTube Nis Bulucu'
-    },
-    body: JSON.stringify({
-      model: 'meta-llama/llama-3.3-8b-instruct:free',
-      max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-  return data.choices[0].message.content;
-}
+                        <div class="flex items-center justify-between p-3 bg-cardHover rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-semibold text-gray-400 w-12">13:30</span>
+                                <div>
+                                    <p class="text-sm font-medium">Emre Kaya</p>
+                                    <p class="text-xs text-gray-400">Saç Kesimi + Sakal</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400">Onaylandı</span>
+                        </div>
 
-function showResult(id, text, isError) {
-  const el = document.getElementById(id);
-  el.style.display = 'block';
-  el.innerHTML = '<div class="result-box' + (isError ? ' error' : '') + '">' + escHtml(text) + '</div>';
-}
+                        <div class="flex items-center justify-between p-3 bg-cardHover rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-semibold text-gray-400 w-12">15:00</span>
+                                <div>
+                                    <p class="text-sm font-medium">Murat Dalkılıç</p>
+                                    <p class="text-xs text-gray-400">Saç Boyama</p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400">Onaylandı</span>
+                        </div>
+                    </div>
+                </div>
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+                <!-- Mini Takvim -->
+                <div class="bg-cardBg p-6 rounded-2xl border border-gray-800">
+                    <div class="flex justify-between items-center mb-6">
+                        <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-chevron-left"></i></button>
+                        <h2 class="font-semibold text-base">Mayıs 2024</h2>
+                        <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
 
-async function runStep0() {
-  const btn = document.getElementById('btn0');
-  btn.disabled = true;
-  btn.textContent = '⏳ Analiz yapılıyor...';
-  setBadge(0, 'run');
+                    <div class="grid grid-cols-7 text-center text-xs text-gray-400 mb-2">
+                        <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+                    </div>
 
-  const box = document.createElement('div');
-  box.id = 'result0';
-  box.style.marginTop = '14px';
-  const existing = document.getElementById('result0');
-  if (existing) existing.remove();
-  document.getElementById('step0').appendChild(box);
-  box.innerHTML = '<div class="result-box loading">AI nişleri araştırıyor... Bu 20-30 saniye sürebilir.</div>';
-  box.style.display = 'block';
+                    <div class="grid grid-cols-7 gap-y-3 text-center text-sm">
+                        <span class="text-gray-600">29</span><span class="text-gray-600">30</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                        <span>6</span><span>7</span><span>8</span><span>9</span><span>13</span><span>14</span><span>12</span>
+                        <span>11</span><span>13</span><span>14</span><span class="bg-goldPrimary text-darkBg font-bold rounded-full w-8 h-8 flex items-center justify-center mx-auto">16</span><span>17</span><span>18</span><span>19</span>
+                        <span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span>
+                        <span>27</span><span>28</span><span>29</span><span>30</span><span>31</span><span class="text-gray-600">1</span><span class="text-gray-600">2</span>
+                    </div>
+                </div>
 
-  try {
-    const prompt = `Sen bir YouTube strateji uzmanısın. YouTube, Reddit ve Google Trends verilerini bilen biri olarak analiz yap.
+                <!-- Yaklaşan Randevular -->
+                <div class="bg-cardBg p-6 rounded-2xl border border-gray-800">
+                    <h2 class="font-semibold text-lg mb-4">Yaklaşan Randevular</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-xs text-gray-400 mb-2">17 Mayıs 2024, Cuma</p>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-2.5 bg-cardHover rounded-xl text-sm">
+                                    <span class="text-gray-400 text-xs">10:00</span>
+                                    <span class="font-medium">Ayşe Demir <span class="text-xs text-gray-400 block">Saç Kesimi</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                                </div>
+                                <div class="flex items-center justify-between p-2.5 bg-cardHover rounded-xl text-sm">
+                                    <span class="text-gray-400 text-xs">14:00</span>
+                                    <span class="font-medium">Zeynep Kara <span class="text-xs text-gray-400 block">Fön</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
 
-Yeni başlayan biri için sıfırdan başlanabilecek en karlı 10 YouTube nişini bul ve listele.
+                        <div>
+                            <p class="text-xs text-gray-400 mb-2">18 Mayıs 2024, Cumartesi</p>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-2.5 bg-cardHover rounded-xl text-sm">
+                                    <span class="text-gray-400 text-xs">11:00</span>
+                                    <span class="font-medium">Seda Nur <span class="text-xs text-gray-400 block">Keratin Bakımı</span></span>
+                                    <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-Her niş için şunları ver:
-- Niş adı
-- Yüksek reklam geliri potansiyeli (1-10)
-- İzlenme talebi (1-10)  
-- Rekabet seviyesi (Düşük/Orta/Yüksek)
-- Yüz göstermeden üretilebilir mi? (Evet/Hayır)
-- Uzun vadeli sürdürülebilirlik (1-10)
-- TOPLAM PUAN (10 üzerinden)
+            </div>
 
-Sonunda yeni başlayan için en mantıklı 5 nişi özellikle belirt ve neden seçtiğini açıkla.
+        </div>
+    </main>
 
-Türkçe yanıt ver. Gerçekçi ve uygulanabilir nişler öner.`;
-
-    const result = await callClaude(prompt);
-    step1Context = result;
-
-    // Extract niches from result
-    const lines = result.split('\n');
-    niches = [];
-    lines.forEach(line => {
-      const match = line.match(/^\d+[\.\)]\s*\*{0,2}([^*\n:]+)/);
-      if (match && niches.length < 10) {
-        const name = match[1].trim().replace(/\*+/g, '').split('–')[0].split('-')[0].trim();
-        if (name.length > 3 && name.length < 60) niches.push(name);
-      }
-    });
-
-    box.innerHTML = '<div class="result-box">' + escHtml(result) + '</div>';
-    setBadge(0, 'done');
-    document.getElementById('next0').style.display = 'block';
-    btn.textContent = '✓ Tamamlandı';
-  } catch(e) {
-    box.innerHTML = '<div class="result-box error">Hata: ' + escHtml(e.message) + '</div>';
-    btn.disabled = false;
-    btn.textContent = '🔍 Tekrar Dene';
-    setBadge(0, 'run');
-  }
-}
-
-function buildNicheButtons() {
-  const container = document.getElementById('niche-buttons');
-  container.innerHTML = '';
-  const list = niches.length > 0 ? niches.slice(0, 8) : [
-    'Kişisel Finans', 'AI Araçları', 'Meditasyon', 'Dil Öğrenme',
-    'Kripto', 'Sağlıklı Yaşam', 'Programlama', 'Motivasyon'
-  ];
-  list.forEach(n => {
-    const btn = document.createElement('button');
-    btn.className = 'niche-btn';
-    btn.textContent = n;
-    btn.onclick = () => {
-      document.querySelectorAll('.niche-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      pickedNiche = n;
-      document.getElementById('btn1').disabled = false;
-    };
-    container.appendChild(btn);
-  });
-}
-
-function goStep(n) {
-  document.getElementById('step' + n).classList.remove('locked');
-  setBadge(n, 'run');
-  setPills(n);
-  if (n === 1) {
-    buildNicheButtons();
-    document.getElementById('niche-picker').style.display = 'block';
-  }
-  if (n === 2) runStep2();
-  if (n === 3) runStep3();
-  if (n === 4) runStep4();
-  setTimeout(() => {
-    document.getElementById('step' + n).scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
-}
-
-async function runStep1() {
-  const btn = document.getElementById('btn1');
-  btn.disabled = true;
-  btn.textContent = '⏳ Analiz yapılıyor...';
-
-  let box = document.getElementById('result1');
-  box.style.display = 'block';
-  box.innerHTML = '<div class="result-box loading">Seçilen niş derinlemesine analiz ediliyor...</div>';
-
-  try {
-    const prompt = `Sen bir YouTube strateji uzmanısın.
-
-"${pickedNiche}" nişini şu kriterlere göre derinlemesine analiz et:
-
-1. İnsanlar bu konuyu neden izliyor? (3-4 madde)
-2. Bu nişte para nereden kazanılır? (reklam, sponsorluk, affiliate, dijital ürün vs.)
-3. Rakip kanallar hangi formatı kullanıyor?
-4. Yeni bir kanal nereden farklılaşabilir? (somut fırsat)
-5. Bu niş 6 ay sonra hâlâ izlenir mi? Neden?
-
-KARAR: Bu nişe "GİRİLİR" mi "GİRİLMEZ" mi? Net karar ver ve gerekçeni açıkla.
-
-Türkçe, somut ve uygulanabilir yanıt ver.`;
-
-    const result = await callClaude(prompt);
-    box.innerHTML = '<div class="result-box">' + escHtml(result) + '</div>';
-    setBadge(1, 'done');
-    document.getElementById('next1').style.display = 'block';
-    btn.textContent = '✓ Tamamlandı';
-  } catch(e) {
-    box.innerHTML = '<div class="result-box error">Hata: ' + escHtml(e.message) + '</div>';
-    btn.disabled = false;
-    btn.textContent = 'Tekrar Dene';
-  }
-}
-
-async function runStep2() {
-  let box = document.getElementById('result2');
-  box.style.display = 'block';
-  box.innerHTML = '<div class="result-box loading">Alt nişler aranıyor...</div>';
-
-  try {
-    const prompt = `Sen bir YouTube strateji uzmanısın.
-
-"${pickedNiche}" ana nişi için rekabeti düşük ama talebi olan 10 alt niş bul.
-
-Her alt niş için şunları ver:
-- Alt niş adı
-- Hedef izleyici kitlesi
-- 10 video fikri (kısa liste)
-- 5 başlık örneği (tıklanabilir)
-- Thumbnail açısı (nasıl görünmeli)
-- Görsel tarz (renk, font, his)
-- Tahmini reklam geliri potansiyeli
-- Neden girilmeli?
-
-ÖNEMLİ: Yüz göstermeden (faceless) üretilebilecek alt nişlere öncelik ver. Her alt niş için [YÜZSÜZ] veya [YÜZLÜ] etiketi ekle.
-
-Türkçe yanıt ver.`;
-
-    const result = await callClaude(prompt);
-    box.innerHTML = '<div class="result-box">' + escHtml(result) + '</div>';
-    setBadge(2, 'done');
-    document.getElementById('next2').style.display = 'block';
-  } catch(e) {
-    box.innerHTML = '<div class="result-box error">Hata: ' + escHtml(e.message) + '</div>';
-  }
-}
-
-async function runStep3() {
-  let box = document.getElementById('result3');
-  box.style.display = 'block';
-  box.innerHTML = '<div class="result-box loading">Rakip kanallar analiz ediliyor...</div>';
-
-  try {
-    const prompt = `Sen bir YouTube strateji uzmanısın.
-
-"${pickedNiche}" nişindeki büyük YouTube kanallarının stratejisini analiz et.
-
-Şunları çıkar:
-1. Hangi başlık formatları çalışıyor? (örneklerle)
-2. Hangi konular tekrar tekrar izleniyor?
-3. Rakiplerin eksik bıraktığı noktalar ne?
-4. Yeni bir kanal hangi açıdan girerse öne çıkar?
-5. İlk 30 günde hangi video fikirleri test edilmeli? (5 somut fikir)
-
-SONUÇ: Yeni bir kanal için direkt uygulanabilir kanal başlangıç stratejisi ver. 3 maddelik aksiyon planı ekle.
-
-Türkçe, somut, uygulanabilir yanıt ver.`;
-
-    const result = await callClaude(prompt);
-    box.innerHTML = '<div class="result-box">' + escHtml(result) + '</div>';
-    setBadge(3, 'done');
-    document.getElementById('next3').style.display = 'block';
-  } catch(e) {
-    box.innerHTML = '<div class="result-box error">Hata: ' + escHtml(e.message) + '</div>';
-  }
-}
-
-async function runStep4() {
-  let box = document.getElementById('result4');
-  box.style.display = 'block';
-  box.innerHTML = '<div class="result-box loading">30 günlük plan hazırlanıyor...</div>';
-
-  try {
-    const prompt = `Sen bir YouTube strateji uzmanısın.
-
-"${pickedNiche}" nişi için tam 30 günlük başlangıç planı hazırla.
-
-Şunları ver:
-
-1. 30 VIDEO FİKRİ (numaralı liste)
-
-2. İLK 5 VİDEO İÇİN BAŞLIK (her biri için 2 alternatif başlık)
-
-3. THUMBNAIL METİNLERİ (ilk 5 video için)
-
-4. VİDEO SIRAMASI (hangi sırayla yayınlanmalı ve neden)
-
-5. İÇERİK ÜRETİM FORMATI (haftalık kaç video, ne zaman, nasıl çekilmeli)
-
-6. GÜNLÜK YAPILACAKLAR (hafta hafta: 1. hafta, 2. hafta, 3. hafta, 4. hafta)
-
-7. BAŞARI ÖLÇÜM KRİTERLERİ:
-   - 30 gün sonunda devam etmek için minimum eşik değerler
-   - Hangi metrikler izlenmeli?
-   - "Bu nişi bırakayım" kararı için net kriterler
-
-Türkçe, çok somut ve uygulanabilir yanıt ver.`;
-
-    const result = await callClaude(prompt);
-    box.innerHTML = '<div class="result-box">' + escHtml(result) + '</div>';
-    setBadge(4, 'done');
-    document.getElementById('final-msg').style.display = 'block';
-    setPills(5);
-  } catch(e) {
-    box.innerHTML = '<div class="result-box error">Hata: ' + escHtml(e.message) + '</div>';
-  }
-}
-</script>
 </body>
 </html>
